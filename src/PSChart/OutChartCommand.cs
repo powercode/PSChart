@@ -52,8 +52,12 @@ namespace PSChart
 		[Parameter]
 		public string OutPath { get; set; }
 
+		[Parameter]
+		public SwitchParameter Clipboard { get; set; }
+
 
 		private readonly Dictionary<string, int> _data = new Dictionary<string, int>(1000);
+
 
 		protected override void ProcessRecord()
 		{
@@ -86,7 +90,7 @@ namespace PSChart
 				Width = Width,
 				Height = Height,
 				Anchor =  AnchorStyles.Bottom | AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-				BackColor = Color.Transparent
+				BackColor = Color.WhiteSmoke
 			};
 			var chartArea = new ChartArea("Data")
 			{
@@ -110,6 +114,15 @@ namespace PSChart
 
 			data.Points.DataBindXY(_data.Keys, _data.Values);
 
+			if (Clipboard)
+			{
+				var memoryStream = new MemoryStream(4 * 1024*1025);
+				chart.SaveImage(memoryStream, ChartImageFormat.Bmp);
+				var img = new Bitmap(memoryStream);
+				System.Windows.Forms.Clipboard.SetImage(img);
+				return;
+			}
+
 			if (string.IsNullOrEmpty(OutPath))
 			{
 				var form = new Form
@@ -120,6 +133,7 @@ namespace PSChart
 				};
 				using (form)
 				{
+					chart.BackColor = Color.Transparent;
 					form.Controls.Add(chart);
 					form.Shown += (sender, args) => ((Form) sender).Activate();
 					var win = new WindowWrapper(Process.GetCurrentProcess().MainWindowHandle);
