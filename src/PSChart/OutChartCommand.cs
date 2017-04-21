@@ -120,7 +120,6 @@ namespace PSChart
 				chart.SaveImage(memoryStream, ChartImageFormat.Bmp);
 				var img = new Bitmap(memoryStream);
 				System.Windows.Forms.Clipboard.SetImage(img);
-				return;
 			}
 
 			if (string.IsNullOrEmpty(OutPath))
