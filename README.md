@@ -15,4 +15,4 @@ Get-PerforceChangeList ... -TotalCount 1000 |
     Out-Chart -Title 'Perforce Commits' -XLabel 'Commit Date' -OutPath chart.png
 ```
 
-![sample chart](https://github.com/PowerCode/PSChart/raw/master/img/chart.png "Sample chart")
+![sample chart](img/chart.png "Sample chart")
