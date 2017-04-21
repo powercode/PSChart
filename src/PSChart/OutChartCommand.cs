@@ -17,7 +17,7 @@ namespace PSChart
 		public PSObject[] InputObject { get; set; }
 
 		[Parameter(Mandatory = true, ParameterSetName = "Property")]
-		[ValidateCount(2, 5)]
+        [ValidateCount(2, 5)]
 		public string[] Property
 		{
 			set
@@ -38,7 +38,7 @@ namespace PSChart
 		public string[] YLabel { get; set; } = {"Count" };
 
 
-		[Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = "group")]
+        [Parameter(Mandatory = true, ValueFromPipeline = true, ParameterSetName = "group")]
 		public Microsoft.PowerShell.Commands.GroupInfo[] GroupInfo { get; set; }
 
 		[Parameter]
@@ -52,11 +52,24 @@ namespace PSChart
 		[Parameter]
 		public string Title { get; set; } = "PowerChart";
 
+		[Parameter]
+        public string Path { get; set; }
 
 		[Parameter]
-		public string Path { get; set; }
+        public SwitchParameter ForceForm { get; set; }
 
-		[Parameter]
+        [Parameter]
+        public SwitchParameter Enable3D { get; set; }
+
+        [Parameter]
+        [ValidateCount(1, 5)]
+        public KnownColor[] SeriesColor{ get; set; }
+
+        [Parameter]
+        public SeriesChartType ChartType{ get; set; }
+
+
+        [Parameter]
 		public SwitchParameter Clipboard { get; set; }
 
 		private readonly Dictionary<string, Series> _data = new Dictionary<string, Series>(10);
@@ -69,7 +82,18 @@ namespace PSChart
 				var s = new Series(y) {Legend = "Legend"};
 				_data.Add(y, s);
 			}
-
+            if (MyInvocation.BoundParameters.ContainsKey(nameof(SeriesColor)))
+            {
+	            ChartSettings.SeriesColor = SeriesColor;
+            }
+            if (Enable3D)
+            {
+                ChartSettings.Enable3D = true;
+            }
+            if (MyInvocation.BoundParameters.ContainsKey(nameof(ChartType)))
+            {
+                ChartSettings.ChartType = ChartType;
+            }
 
 	}
 
@@ -85,9 +109,21 @@ namespace PSChart
 					foreach (var yVal in YLabel)
 					{
 						var serie = _data[yVal];
-						var yValue = LanguagePrimitives.ConvertTo<int>(props[yVal].Value);
-						serie.Points.AddXY(x, yValue);
-						serie.Points[0].LegendText = yVal.Length == 0 ? "<none>" : yVal;
+						switch (props[yVal].Value)
+						{
+							case double d: serie.Points.AddXY(x, d); break;
+							case float f: serie.Points.AddXY(x, f); break;
+							case ulong ul: serie.Points.AddXY(x, ul); break;
+							case long l: serie.Points.AddXY(x, l); break;
+							case uint ui: serie.Points.AddXY(x, ui); break;
+							case int i: serie.Points.AddXY(x, i); break;
+							default:
+								var yValue = LanguagePrimitives.ConvertTo<double>(props[yVal].Value);
+								serie.Points.AddXY(x, yValue);
+								break;
+						}
+
+						//serie.Points[0].LegendText = yVal.Length == 0 ? "<none>" : yVal;
 					}
 				}
 			}
@@ -112,7 +148,7 @@ namespace PSChart
 				Width = Width,
 				Height = Height,
 				Anchor =  AnchorStyles.Bottom | AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-				BackColor = Color.WhiteSmoke,
+				BackColor = Color.WhiteSmoke
 			};
 			var legend = new Legend
 			{
@@ -133,7 +169,9 @@ namespace PSChart
 
 				},
 				AxisY = {Title = YLabel.Length == 1 ? YLabel[0] : "Values"},
+
 				Area3DStyle =  new ChartArea3DStyle{Enable3D = ChartSettings.Enable3D },
+				BackColor = Color.FromKnownColor(ChartSettings.BackColor),
 			};
 			chart.ChartAreas.Add(chartArea);
 
@@ -146,10 +184,12 @@ namespace PSChart
 				s.SmartLabelStyle.Enabled = true;
 				s.SmartLabelStyle.AllowOutsidePlotArea = LabelOutsidePlotAreaStyle.Yes;
 				var colorIndex = Math.Min(i, ChartSettings.SeriesColor.Length - 1);
-				s.Color = ChartSettings.SeriesColor[colorIndex];
+				s.Color = Color.FromKnownColor(ChartSettings.SeriesColor[colorIndex]);
 				s.ShadowColor = Color.FromArgb(0xFF, 0x20, 0x20, 0x20);
 				s.ShadowOffset = ChartSettings.ShadowOffset;
 				s.ChartType = ChartSettings.ChartType;
+				s.LabelFormat = ChartSettings.LabelFormatString;
+
 				i++;
 			}
 
@@ -162,7 +202,9 @@ namespace PSChart
 				System.Windows.Forms.Clipboard.SetImage(img);
 			}
 
-			if (string.IsNullOrEmpty(Path))
+			var writeChartToDisk = !string.IsNullOrEmpty(Path);
+
+			if (ForceForm || (!Clipboard && !writeChartToDisk))
 			{
 				var form = new Form
 				{
@@ -172,7 +214,6 @@ namespace PSChart
 				};
 				using (form)
 				{
-					chart.BackColor = Color.Transparent;
 					form.Controls.Add(chart);
 					form.Shown += (sender, args) => ((Form) sender).Activate();
 					var win = new WindowWrapper(Process.GetCurrentProcess().MainWindowHandle);
@@ -181,7 +222,7 @@ namespace PSChart
 					form.ShowDialog(win);
 				}
 			}
-			else
+			if(writeChartToDisk)
 			{
 				var outPath = SessionState.Path.GetUnresolvedProviderPathFromPSPath(Path);
 				var dir = System.IO.Path.GetDirectoryName(outPath);
@@ -189,7 +230,6 @@ namespace PSChart
 				{
 					Directory.CreateDirectory(dir);
 				}
-				chart.BackColor = Color.WhiteSmoke;
 				chart.SaveImage(outPath, ChartImageFormat.Png);
 				var fi = new FileInfo(outPath);
 				WriteObject(fi);
