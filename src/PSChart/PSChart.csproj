@@ -45,9 +45,10 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-	<Reference Include="Microsoft.PowerShell.Commands.Utility" />
+    <Reference Include="Microsoft.PowerShell.Commands.Utility" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChartSettings.cs" />
     <Compile Include="WindowWrapper.cs" />
     <Compile Include="OutChartCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
