@@ -6,13 +6,9 @@ Very basic charting for PowerShell
 
 ```powershell
 Import-Module PSChart
-Get-PerforceChangeList ... -TotalCount 1000 | 
-    group {  $_.time.ToShortDateString()} | 
-    Out-Chart -Title 'Perforce Commits' -XLabel 'Commit Date'
-    
-Get-PerforceChangeList ... -TotalCount 1000 | 
-    group {  $_.time.ToShortDateString()} | 
-    Out-Chart -Title 'Perforce Commits' -XLabel 'Commit Date' -OutPath chart.png
+$data = Get-CimInstance Win32_LogicalDisk | where DriveType -eq 3 
+$data | out-chart -ChartType Column -Property DeviceId,Size,Freespace -Title 'FreeDiskSpace' -SeriesColor Orange ,MediumAquamarine -ChartSettings @{LabelFormatString = 'N0'} 
+
 ```
 
 ![sample chart](img/chart.png "Sample chart")
