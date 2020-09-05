@@ -6,6 +6,7 @@ namespace PSChart
 {
 	public class ChartSettings
 	{
+
 		public bool Enable3D { get; set; }
 
 		public KnownColor[] SeriesColor { get; set; } = {KnownColor.Blue, KnownColor.DarkOrange, KnownColor.Aquamarine, KnownColor.Red};
